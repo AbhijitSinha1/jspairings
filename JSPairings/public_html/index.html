@@ -5,10 +5,144 @@ and open the template in the editor.
 <!DOCTYPE html>
 <html>
     <head>
-        <title></title>
+        <title>JavaScript Library - Elliptic Curves And Pairings</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link href="style.css" rel="stylesheet" type="text/css" />
+        <script src="BigInteger.js"></script>
+        <script src="PRNG4.js"></script>
+        <script src="RNG.js"></script>
+        <script src="JSPoint.js"></script>
+        <script src="JSField2.js"></script>
+        <script src="JSField4.js"></script>
+        <script src="JSField6.js"></script>
+        <script src="JSField12.js"></script>
+        <script src="JSParams.js"></script>
+        <script src="JSCurve.js"></script>
+        <script src="JSPoint2.js"></script>
+        <script src="JSCurve2.js"></script>
+        <script src="JSPairing.js"></script>
+        <script src="JSTests.js"></script>
+        <script type="text/javascript">
+            function multiplyFp() {
+                var test = new JSTests();
+                var average = test.multiplyFp();
+                document.getElementById("Result").innerHTML = "";
+                var result = document.getElementById("Result");
+                for (var i = 0; i < test.validBitsRange.length; i++) {
+                    var para = document.createElement("p");
+                    para.appendChild(document.createTextNode("Time average for MultiplyFp Operation " + average[i] + " ms with " + test.validBitsRange[i] + " bits"));
+                    result.appendChild(para);
+                }
+                document.getElementById("Body").insertBefore(result, document.getElementById("Body").childNodes[-1]);
+            }
+
+            function multiplyFp2() {
+                var test = new JSTests();
+                var average = test.multiplyFp2();
+                document.getElementById("Result").innerHTML = "";
+                var result = document.getElementById("Result");
+                for (var i = 0; i < test.validBitsRange.length; i++) {
+                    var para = document.createElement("p");
+                    para.appendChild(document.createTextNode("Time average for MultiplyFp2 Operation " + average[i] + " ms with " + test.validBitsRange[i] + " bits"));
+                    result.appendChild(para);
+                }
+                document.getElementById("Body").insertBefore(result, document.getElementById("Body").childNodes[-1]);
+            }
+
+            function multiplicationInFp2() {
+                var test = new JSTests();
+                var average = test.multiplicationInFp2();
+                document.getElementById("Result").innerHTML = "";
+                var result = document.getElementById("Result");
+                for (var i = 0; i < test.validBitsRange.length; i++) {
+                    var para = document.createElement("p");
+                    para.appendChild(document.createTextNode("Time average for multiplicationInFp2 Operation " + average[i] + " ms with " + test.validBitsRange[i] + " bits"));
+                    result.appendChild(para);
+                }
+                document.getElementById("Body").insertBefore(result, document.getElementById("Body").childNodes[-1]);
+            }
+
+            function multiplicationInFp12() {
+                var test = new JSTests();
+                var average = test.multiplicationInFp12();
+                document.getElementById("Result").innerHTML = "";
+                var result = document.getElementById("Result");
+                for (var i = 0; i < test.validBitsRange.length; i++) {
+                    var para = document.createElement("p");
+                    para.appendChild(document.createTextNode("Time average for multiplicationInFp12 Operation " + average[i] + " ms with " + test.validBitsRange[i] + " bits"));
+                    result.appendChild(para);
+                }
+                document.getElementById("Body").insertBefore(result, document.getElementById("Body").childNodes[-1]);
+            }
+
+            function sextic_twists() {
+                var test = new JSTests();
+                var average = test.sextic_twists();
+                document.getElementById("Result").innerHTML = "";
+                var result_sextic_twists = document.getElementById("Result");
+                for (var i = 0; i < test.validBitsRange.length; i++) {
+                    var para = document.createElement("p");
+                    para.appendChild(document.createTextNode("Time average for Curve " + average[i] + " ms with " + test.validBitsRange[i] + " bits"));
+                    result_sextic_twists.appendChild(para);
+                }
+                document.getElementById("Body").insertBefore(result_sextic_twists, document.getElementById("Body").childNodes[-1]);
+            }
+
+            function pairing() {
+                var test = new JSTests();
+                var average = test.pairing();
+                document.getElementById("Result").innerHTML = "";
+                var result_pairing = document.getElementById("Result");
+                for (var i = 0; i < test.validBitsRange.length; i++) {
+                    var para = document.createElement("p");
+                    para.appendChild(document.createTextNode("Time average for Optimal Pairing: " + average[i] + " ms with " + test.validBitsRange[i] + " bits"));
+                    result_pairing.appendChild(para);
+                }
+                document.getElementById("Body").insertBefore(result_pairing, document.getElementById("Body").childNodes[-1]);
+            }
+            
+            function teste() {
+                var test = new JSTests();
+                test.test4(10);
+            }
+        </script>
     </head>
     <body>
-        <div>TODO write content</div>
+        <div id="Header">
+            <h1>JavaScript Library For Encryption</h1>
+        </div>
+        <div id="Body">
+            <p>This page is a demo of the Javascript Library For Encryption.</p>
+            <table border="1">
+                <tr>
+                    <td>Multiply Fp</td>
+                    <td><input type="button" id="multiplicationFp" onclick="multiplyFp();" value="Calcule" /></td>
+                </tr>
+                <tr>
+                    <td>Multiply Fp2</td>
+                    <td><input type="button" id="multiplyFp2" onclick="multiplyFp2();" value="Calcule" /></td>
+                </tr>
+                <tr>
+                    <td>Multiplication Fp2</td>
+                    <td><input type="button" id="multiplicationInFp2" onclick="multiplicationInFp2();" value="Calcule" /></td>
+                </tr>
+                <tr>
+                    <td>Multiplication Fp12</td>
+                    <td><input type="button" id="multiplicationInFp12" onclick="multiplicationInFp12();" value="Calcule" /></td>
+                </tr>
+                <tr>
+                    <td>Pairing</td>
+                    <td><input type="button" id="pairing" onclick="pairing();" value="Pairing" /></td>
+                </tr>
+                <tr>
+                    <td>WNAF</td>
+                    <td><input type="button" id="teste" onclick="teste();" value="teste" /></td>
+                </tr>
+            </table>
+            <div id="Result"></div>
+        </div>
+        <div id="Footer">
+            <h4>Jorgenhoc - &copy; Copyright</h4>
+        </div>
     </body>
 </html>
