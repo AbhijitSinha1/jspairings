@@ -7,7 +7,7 @@
 var JSTests = (function () {
 
     var JSTests = function () {
-        this.validBitsRange = new Array(192,224,254,256);
+        this.validBitsRange = new Array(254,256);
     };
 
     JSTests.test1 = function (pairType) {
@@ -157,11 +157,11 @@ var JSTests = (function () {
             var bn = new JSParams(this.validBitsRange[i]);
             var E = new JSCurve(bn);
             var p = E.pointFactory(rng);
-            p.getSerializedTable();
+            p.preCompute();
             for (var j = 0; j < 1000; j++) {
                 var m = new BigInteger(this.validBitsRange[i], rng);
                 var before = window.performance.now();
-                var result = p.multiply(m);
+                var result = p.mohamedMultiply(m);
                 var after = window.performance.now();
                 total[i] += (after - before);
             }

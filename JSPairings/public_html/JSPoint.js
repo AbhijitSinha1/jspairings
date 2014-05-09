@@ -13,8 +13,8 @@ var JSPoint = (function () {
 
         if (arguments.length === 1) {
             /*
-             * Create an instance of the BNCurve point at infinity on curve E.
-             * @param {BNCurve} E the elliptic curve where the created point is located.
+             * Create an instance of the JSCurve point at infinity on curve E.
+             * @param {JSCurve} E the elliptic curve where the created point is located.
              */
             if (E instanceof JSCurve) {
                 this.E = E;
@@ -44,8 +44,8 @@ var JSPoint = (function () {
 
         if (arguments.length === 3) {
             /*
-             * Create a normalized BNCurve point from given affine coordinates and a curve
-             * @param {BNCurve} E the underlying elliptic curve.
+             * Create a normalized JSCurve point from given affine coordinates and a curve
+             * @param {JSCurve} E the underlying elliptic curve.
              * @param {BigInteger} x the affine x-coordinate (mod p).
              * @param {BigInteger} y the affine y-coordinate (mod p).
              */
@@ -57,8 +57,8 @@ var JSPoint = (function () {
                 this.z = E.bn._1; // normalized
             }
             /*
-             * Create an BNCurve point from a given affine x-coordinate, a y-bit, and a curve
-             * @param {BNCurve} E the underlying elliptic curve.
+             * Create an JSCurve point from a given affine x-coordinate, a y-bit, and a curve
+             * @param {JSCurve} E the underlying elliptic curve.
              * @param {BigInteger} x the affine x-coordinate (mod p).
              * @param {Integer} y the least significant bit of the y-coordinate.
              */
@@ -76,8 +76,8 @@ var JSPoint = (function () {
                 this.z = E.bn._1; // normalized
             }
             /*
-             * Create an BNCurve point from a given x-trit, an affine y-coordinate, and a curve
-             * @param {BNCurve} E the underlying elliptic curve.
+             * Create an JSCurve point from a given x-trit, an affine y-coordinate, and a curve
+             * @param {JSCurve} E the underlying elliptic curve.
              * @param {Integer} x the least significant trit of the x-coordinate.
              * @param {BigInteger} y the affine y-coordinate (mod p).
              */
@@ -105,8 +105,8 @@ var JSPoint = (function () {
         }
 
         /*
-         * Create an BNCurve point from given projective coordinates and a curve.
-         * @param {BNCurve} E the underlying elliptic curve.
+         * Create an JSCurve point from given projective coordinates and a curve.
+         * @param {JSCurve} E the underlying elliptic curve.
          * @param {BigInteger} x the affine x-coordinate (mod p).
          * @param {BigInteger} y the affine y-coordinate (mod p).
          * @param {BigInteger} z the affine z-coordinate (mod p).
@@ -121,7 +121,7 @@ var JSPoint = (function () {
     };
 
     /*
-     * Check whether this is the point at infinity (i.e. the BNCurve group zero element).
+     * Check whether this is the point at infinity (i.e. the JSCurve group zero element).
      * @returns true if this is the point at infinity, otherwise false.
      */
     JSPoint.isZero = function () {
@@ -279,8 +279,8 @@ var JSPoint = (function () {
         // EDF doubling formulas:
         // <http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l>
         // <http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-mdbl-2007-bl>
-        var A, B, C, S, M, X = this.x, Y = this.y, Z = this.z;
         var p = this.E.bn.p; // shorthand
+        var A, B, C, S, M, X = this.x, Y = this.y, Z = this.z;
         while (n-- > 0) {
             A = X.multiply(X); // A = X1^2 (modular reduction is irrelevant)
             B = Y.multiply(Y).mod(p); // B = Y1^2
@@ -289,7 +289,8 @@ var JSPoint = (function () {
             S = S.multiply(S).subtract(A).subtract(C).shiftLeft(1).mod(p); // S = 2*((X1+B)^2-A-C)
             M = A.multiply(this.E.bn._3).mod(p); // M = 3*A
             X = M.multiply(M).subtract(S.shiftLeft(1)).mod(p); // X3 = M^2-2*S
-            Z = Y.multiply(Z).shiftLeft(1).mod(p); // Z3 = 2*Y1*Z1
+            if (Z.compareTo(this.E.bn._1) === 0) Z = Y.shiftLeft(1); // Z3 = 2*Y1
+            else Z = Y.multiply(Z).shiftLeft(1).mod(p); // Z3 = 2*Y1*Z1
             Y = M.multiply(S.subtract(X)).subtract(C.shiftLeft(3)).mod(p); // Y3 = M*(S-X3)-8*C
         }
         return new JSPoint(this.E, X, Y, Z);
@@ -304,7 +305,7 @@ var JSPoint = (function () {
      */
     JSPoint.multiply = function (k) {
         if(this.pp16P === null) {
-            if(k.compareTo(BigInteger.ONE) === 0) {
+            if(k.compareTo(this.E.bn._1) === 0) {
                 return this;
             }
             var bn = this.E.bn;
@@ -343,7 +344,7 @@ var JSPoint = (function () {
         }
     };
 
-    JSPoint.simultaneous = function (ks, kr, Y, Q, kR, R, kS, S) {
+    JSPoint.simultaneous = function (ks, kr, Y) { // function (ks, kr, Y, Q, kR, R, kS, S) {
         /*
          * Compute ks*this + kr*Y.  This is useful in the verification part of several signature algorithms,
          * and (hopely) faster than two scalar multiplications.
@@ -387,64 +388,60 @@ var JSPoint = (function () {
                 return R;
             } else R = this.multiply(ks).add(Y.multiply(ks));
         }
-        /*
-         * 
-         */
-        if (arguments.length === 8) {
-            var kP = ks, P = kr, kQ = Y;
-            var hV = new Array(16);
-            P = P.normalize();
-            if (kP.signum() < 0) {
-                kP = kP.negate();
-                P = P.negate();
-            }
-            Q = Q.normalize();
-            if (kQ.signum() < 0) {
-                kQ = kQ.negate();
-                Q = Q.negate();
-            }
-            R = R.normalize();
-            if (kR.signum() < 0) {
-                kR = kR.negate();
-                R = R.negate();
-            }
-            S = S.normalize();
-            if (kS.signum() < 0) {
-                kS = kS.negate();
-                S = S.negate();
-            }
-            hV[0] = this.E.infinity;
-            hV[1] = P;
-            hV[2] = Q;
-            hV[4] = R;
-            hV[8] = S;
-            for (var i = 2; i < 16; i <<= 1) {
-                for (var j = 1; j < i; j++) {
-                    hV[i + j] = hV[i].add(hV[j]);
-                }
-            }
-            var t = Math.max(Math.max(kP.bitLength(), kQ.bitLength()), Math.max(kR.bitLength(), kS.bitLength()));
-            var V = this.E.infinity;
-            for (var i = t - 1; i >= 0; i--) {
-                var j = (kS.testBit(i) ?   8 : 0) |
-                        (kR.testBit(i) ?   4 : 0) |
-                        (kQ.testBit(i) ?   2 : 0) |
-                        (kP.testBit(i) ?   1 : 0);
-                V = V.twice(1).add(hV[j]);
-            }
-            return V;
-        }
+//        /*
+//         * 
+//         */
+//        if (arguments.length === 8) {
+//            var kP = ks, P = kr, kQ = Y;
+//            var hV = new Array(16);
+//            P = P.normalize();
+//            if (kP.signum() < 0) {
+//                kP = kP.negate();
+//                P = P.negate();
+//            }
+//            Q = Q.normalize();
+//            if (kQ.signum() < 0) {
+//                kQ = kQ.negate();
+//                Q = Q.negate();
+//            }
+//            R = R.normalize();
+//            if (kR.signum() < 0) {
+//                kR = kR.negate();
+//                R = R.negate();
+//            }
+//            S = S.normalize();
+//            if (kS.signum() < 0) {
+//                kS = kS.negate();
+//                S = S.negate();
+//            }
+//            hV[0] = this.E.infinity;
+//            hV[1] = P;
+//            hV[2] = Q;
+//            hV[4] = R;
+//            hV[8] = S;
+//            for (var i = 2; i < 16; i <<= 1) {
+//                for (var j = 1; j < i; j++) {
+//                    hV[i + j] = hV[i].add(hV[j]);
+//                }
+//            }
+//            var t = Math.max(Math.max(kP.bitLength(), kQ.bitLength()), Math.max(kR.bitLength(), kS.bitLength()));
+//            var V = this.E.infinity;
+//            for (var i = t - 1; i >= 0; i--) {
+//                var j = (kS.testBit(i) ?   8 : 0) |
+//                        (kR.testBit(i) ?   4 : 0) |
+//                        (kQ.testBit(i) ?   2 : 0) |
+//                        (kP.testBit(i) ?   1 : 0);
+//                V = V.twice(1).add(hV[j]);
+//            }
+//            return V;
+//        }
     };
 
     JSPoint.getSerializedTable = function () {
         if (this.pp16P === null) {
             var length = Math.floor((this.E.bn.n.bitLength() + 3)/4);
             this.pp16P = new Array(length);
-            this.pp16Pserial = new Array(length);
-            for (var i = 0; i < length; i++) {
-                this.pp16P[i] = new Array(16);
-                this.pp16Pserial[i] = new Array(16);
-            }
+            for (var i = 0; i < length; i++) this.pp16P[i] = new Array(16);
             var P = this.normalize();
             var pp16Pi = this.pp16P[0];
             pp16Pi[0] = this.E.infinity;
@@ -461,40 +458,15 @@ var JSPoint = (function () {
                     pp16Pi[j] = pp16Ph[j].twice(4).normalize();
                 }
             }
-            for (var i = 0; i < this.pp16P.length; i++) {
-                for (var j = 0; j < this.pp16P[i].length; j++) {
-                    this.pp16Pserial[i][j] = this.pp16P[i][j].toByteArray(4);
-                }
-            }
         }
-        return this.pp16Pserial;
     };
 
     JSPoint.preCompute = function () {
         if (this.preComp === null) {
-            // width=8 => 2^(8-1)-1=127
-            this.preComp = new Array(127);
-            this.preComp[0] = this;
-            // Compute 2*P
-            var twiceP = this.twice(1);
-            for (var i = 1; i < 127; i++) {
-                // Compute the new ECPoints for the precomputation array.
-                // The values 1, 3, 5, ..., 2^(width-1)-1 times p are computed.
-                this.preComp[i] = twiceP.add(this.preComp[i - 1]);
-            }
-        }
-    };
-
-    JSPoint.preCompute2 = function () {
-        if (this.preComp === null) {
             var l = this.E.bn.n.bitLength();
             var w;
-            if (l < 13) w = 2;
-            else if (l < 41) w = 3;
-            else if (l < 121) w = 5;
-            else if (l < 337) w = 7;
-            else if (l < 897) w = 7;
-            else if (l < 2305) w = 8;
+            if (l < 121) w = 6;
+            else if (l < 225) w = 7;
             else w = 8;
             var a = Math.ceil(l/w);
             var v;
@@ -515,25 +487,23 @@ var JSPoint = (function () {
             } else {
                 v = 1;
             }
-            // si a es divisible por 2, osea: a%2=0, entonces v=a/2
-            // caso contrario probar para a%3, a%5, ... cuando cero entonces la division es v
             var b = Math.ceil(a/v);
-            var s = new Array(w);
-            for (var i=0; i<w; i++) s[i] = Math.pow(2,i);
+            var s = [];
+            for (var i=0; i<w; i++) s.push(Math.pow(2,i));
             var d = new Array(Math.pow(2,w-2));
             for (var i=0; i<d.length; i++) d[i] = 2*i+1;
             var P = this.normalize();
             this.preComp = new Array(v);
             for (var i=0; i<v; i++) this.preComp[i] = new Array();
-            for (var i=0; i<s.length; i++) {
+            for (var i=0; i<w; i++) {
                 for (var j=0; j<d.length; j++) {
-                    this.preComp[0][s[i]*d[j]] = P.multiply(new BigInteger((s[i]*d[j]).toString(),10));
+                    this.preComp[0][s[i]*d[j]] = P.multiply(this.E.bn.n.nbv(s[i]*d[j])).normalize();
                 }
             }
-            for (var i=0; i<s.length; i++) {
+            for (var i=0; i<w; i++) {
                 for (var j=0; j<d.length; j++) {
                     for (var k=1; k<v; k++) {
-                        this.preComp[k][s[i]*d[j]] = this.preComp[0][s[i]*d[j]].twice(k*w*b);
+                        this.preComp[k][s[i]*d[j]] = this.preComp[0][s[i]*d[j]].twice(k*w*b).normalize();
                     }
                 }
             }
@@ -624,9 +594,6 @@ var JSPoint = (function () {
             i++;
         }
         length++;
-        // Reduce the WNAF array to its actual length
-//        var wnafShort = new Int8Array(length);
-//        JSPoint.arrayCopy(wnaf,0,wnafShort,0,length);
         if (length < this.E.bn.n.bitLength()) {
             var wnafLong = new Int8Array(this.E.bn.n.bitLength());
             JSPoint.arrayCopy(wnaf,0,wnafLong,0,this.E.bn.n.bitLength());
@@ -640,28 +607,13 @@ var JSPoint = (function () {
         var m = k.bitLength();
         // width of the Window NAF
         var w;
-        // Required length of precomputation array
-//        var reqPreqComp;
         // Determine optimal width and corresponding length of precomputation
         // array based on literature values
-        if (m < 13) w = 2;
-        else if (m < 41) w = 3;
-        else if (m < 121) w = 5;
-        else if (m < 337) w = 7;
+        if (m < 121) w = 6;
         else if (m < 897) w = 7;
-        else if (m < 2305) w = 8;
         else w = 8;
         // Compute the Window NAF of the desired width
         var wnaf = this.windowNAF(w,k);
-//        var preComp = new Array(reqPreqComp);
-//        preComp[0] = this;
-//        // Compute 2*P
-//        var twiceP = this.twice(1);
-//        for (var i = 1; i < reqPreqComp; i++) {
-//            // Compute the new ECPoints for the precomputation array.
-//            // The values 1, 3, 5, ..., 2^(width-1)-1 times p are computed.
-//            preComp[i] = twiceP.add(preComp[i - 1]);
-//        }
         // Q point infinite
         var Q = this.E.infinity;
         var l = wnaf.length;
@@ -680,26 +632,21 @@ var JSPoint = (function () {
         return Q;
     };
 
-    JSPoint.proposedMultiply = function (k) {
+    JSPoint.mohamedMultiply = function (k) {
+        k = k.mod(this.E.bn.n);
         // floor(log2(k))
         var m = this.E.bn.n.bitLength();
         // width of the Window NAF
         var w;
         // Determine optimal width and corresponding length of precomputation
         // array based on literature values
-        if (m < 13) w = 2;
-        else if (m < 41) w = 3;
-        else if (m < 121) w = 5;
-        else if (m < 337) w = 7;
-        else if (m < 897) w = 7;
-        else if (m < 2305) w = 8;
+        if (m < 121) w = 6;
+        else if (m < 225) w = 7;
         else w = 8;
         // Compute the Window NAF of the desired width
         var wnafLong = this.windowNAF(w,k);
         var l = wnafLong.length;
         var wnaf, v;
-        // si a es divisible por 2, osea: a%2=0, entonces v=a/2
-        // caso contrario probar para a%3, a%5, ... cuando cero entonces la division es v
         var a = Math.ceil(l/w);
         if (a%2 === 0) {
             v = Math.ceil(a/2);
@@ -771,11 +718,10 @@ var JSPoint = (function () {
     JSPoint.prototype.simultaneous = JSPoint.simultaneous;
     JSPoint.prototype.getSerializedTable = JSPoint.getSerializedTable;
     JSPoint.prototype.preCompute = JSPoint.preCompute;
-    JSPoint.prototype.preCompute2 = JSPoint.preCompute2;
     JSPoint.prototype.toByteArray = JSPoint.toByteArray;
     JSPoint.prototype.windowNAF = JSPoint.windowNAF;
     JSPoint.prototype.multiplyNAF = JSPoint.multiplyNAF;
-    JSPoint.prototype.proposedMultiply = JSPoint.proposedMultiply;
+    JSPoint.prototype.mohamedMultiply = JSPoint.mohamedMultiply;
 
     return JSPoint;
 })();

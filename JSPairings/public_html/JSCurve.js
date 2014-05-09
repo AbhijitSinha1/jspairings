@@ -9,7 +9,7 @@ var JSCurve = (function () {
 
     /*
      * Build the standard BN curve BN(u): y^2 = x^3 + b.
-     * @param {BNParams} bn BN parameters of the curve
+     * @param {JSParams} bn BN parameters of the curve
      * @returns the desired curve, or null if the given index does not define suitable parameters
      */
     var JSCurve = function (bn) {
@@ -34,7 +34,7 @@ var JSCurve = (function () {
                 var x = new BigInteger(2*this.bn.p.bitLength(), rand).mod(this.bn.p);
                 var y = this.bn.sqrt(x.multiply(x).multiply(x).add(this.b));
             } while (y === null);
-            return new BNPoint(this, x, y);
+            return new JSPoint(this, x, y);
         } else {
             throw new Error("Parameter is not a cryptographically strong PRNG");
         }
@@ -70,7 +70,7 @@ var JSCurve = (function () {
 
     /*
      * Check whether this curve contains a given point
-     * @param {BNPoint} P the point whose pertinence or not to this curve is to be determined
+     * @param {JSPoint} P the point whose pertinence or not to this curve is to be determined
      * @returns true if this curve contains P, otherwise false
      */
     JSCurve.contains = function (P) {

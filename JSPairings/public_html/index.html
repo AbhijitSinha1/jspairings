@@ -102,8 +102,22 @@ and open the template in the editor.
             }
             
             function teste() {
-                var test = new JSTests();
-                test.test4(10);
+                var rng = new SecureRandom();
+                var bn = new JSParams(224);
+                var E = new JSCurve(bn);
+                var P = E.pointFactory(rng);
+                P.preCompute();
+                var total = 0;
+                var before = 0;
+                var after = 0;
+                for (var j = 0; j < 1000; j++) {
+                    var k = new BigInteger(224, rng);
+                    before = window.performance.now();
+                    var result1 = P.mohamedMultiply(k);
+                    after = window.performance.now();
+                    total += (after - before);
+                }
+                console.log(total/1000);
             }
         </script>
     </head>
