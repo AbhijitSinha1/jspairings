@@ -559,11 +559,11 @@ var JSPoint = (function () {
         }
     };
 
-    JSPoint.windowNAF = function (w, k) {
+    JSPoint.windowNAF = function (w, k, l) {
         // Clamp the window width in the range [2,8]
         if (w < 2 || w > 8) throw new Error("'width' must be in the range [2,8]");
         //The window NAF is at most 1 element longer than the binary representation of the integer k.
-        var wnaf = new Int8Array(this.E.bn.n.bitLength() + 1);
+        var wnaf = new Int8Array(l + 1);
         // 2^width as short and BigInteger
         var pow2wB = (1 << w);
         var pow2wBI = new BigInteger(pow2wB.toString(), 10);
@@ -593,10 +593,9 @@ var JSPoint = (function () {
             k = k.shiftRight(1);
             i++;
         }
-        length++;
-        if (length < this.E.bn.n.bitLength()) {
-            var wnafLong = new Int8Array(this.E.bn.n.bitLength());
-            JSPoint.arrayCopy(wnaf,0,wnafLong,0,this.E.bn.n.bitLength());
+        if (length < l) {
+            var wnafLong = new Int8Array(l);
+            JSPoint.arrayCopy(wnaf,0,wnafLong,0,l);
             return wnafLong;
         }
         return wnaf;
@@ -613,7 +612,7 @@ var JSPoint = (function () {
         else if (m < 897) w = 7;
         else w = 8;
         // Compute the Window NAF of the desired width
-        var wnaf = this.windowNAF(w,k);
+        var wnaf = this.windowNAF(w,k,m);
         // Q point infinite
         var Q = this.E.infinity;
         var l = wnaf.length;
@@ -644,7 +643,7 @@ var JSPoint = (function () {
         else if (m < 225) w = 7;
         else w = 8;
         // Compute the Window NAF of the desired width
-        var wnafLong = this.windowNAF(w,k);
+        var wnafLong = this.windowNAF(w,k,m);
         var l = wnafLong.length;
         var wnaf, v;
         var a = Math.ceil(l/w);
