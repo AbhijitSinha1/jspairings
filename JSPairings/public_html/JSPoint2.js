@@ -275,10 +275,10 @@ var JSPoint2 = (function () {
      */
     JSPoint2.twice = function (n) {
         if (this.isZero()) return this;
-        var A, B, C, S, M, X = this.x, Y = this.y, Z = this.z;
         // EDF doubling formulas:
         // <http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l>
         // <http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-mdbl-2007-bl>
+        var A, B, C, S, M, X = this.x, Y = this.y, Z = this.z;
         while (n-- > 0) {
             A = X.square(); // A = X1^2
             B = Y.square(); // B = Y1^2
@@ -294,113 +294,74 @@ var JSPoint2 = (function () {
 
     /*
      * Compute k*this
-     * This method implements the quaternary window multiplication algorithm.
+     * This method implements the GLV strategy.
      * @param {BigInteger} k scalar by which this point is to be multiplied.
      * @returns k*this.
      */
-    //*
     JSPoint2.multiply = function (k) {
+        var bn = this.E.E.bn;
         var P = this.normalize();
         if (k.signum() < 0) {
             k = k.negate();
             P = P.negate();
         }
-        var e = k.toByteArray();
-        var mP = new Array(16);
-        mP[0] = this.E.infinity;
-        mP[1] = P;
-        for (var i = 1; i <= 7; i++) {
-            mP[2*i] = mP[i].twice(1);
-            mP[2*i + 1] = mP[2*i].add(P);
+        var halfn = bn.n.shiftRight(1);
+        var w = new Array(4);
+        for (var i=0; i<4; i++) {
+            w[i] = k.multiply(bn.latInv[i]);
+            if (w[i].mod(bn.n).compareTo(halfn) <= 0) {
+                w[i] = w[i].divide(bn.n);
+            } else {
+                w[i] = w[i].divide(bn.n).add(bn._1);
+            }
         }
-        var A = this.E.infinity;
-        for (var i = 0; i < e.length; i++) {
-            var u = e[i] & 0xff;
-            A = A.twice(4).add(mP[u >>> 4]).twice(4).add(mP[u & 0xf]);
+        var u = new Array(4);
+        for (var j=0; j<4; j++) {
+            u[j] = bn._0;
+            for (var i=0; i<4; i++) {
+                u[j] = u[j].add(w[i].multiply(bn.latRed[i][j]));
+            }
+            u[j] = u[j].negate();
         }
-        return A.normalize();
+        u[0] = u[0].add(k);
+        var Q = P.frobex(1);
+        var R = P.frobex(2);
+        var S = P.frobex(3);
+        return this.simultaneous(u[0], P, u[1], Q, u[2], R, u[3], S);
     };
 
-    JSPoint2.simultaneous = function (ks, kr, Y, Q, kR, R, kS, S) {
-        /*
-         * Compute ks*this + kr*Y.  This is useful in the verification part of several signature algorithms,
-         * and (hopely) faster than two scalar multiplications.
-         * @param {BigInteger} ks scalar by which this point is to be multiplied.
-         * @param {BigInteger} kr scalar by which Y is to be multiplied.
-         * @param {JSPoint2} Y a curve point.
-         * @returns ks*this + kr*Y
-         */
-        if (arguments.length === 3) {
-            var hV = new Array(16);
-            var P = this.normalize();
-            Y = Y.normalize();
-            if (ks.signum() < 0) {
-                ks = ks.negate(); P = P.negate();
-            }
-            if (kr.signum() < 0) {
-                kr = kr.negate(); Y = Y.negate();
-            }
-            hV[0] = this.E.infinity;
-            hV[1] = P;
-            hV[2] = Y;
-            hV[3] = P.add(Y);
-            for (var i = 4; i < 16; i += 4) {
-                hV[i] = hV[i >> 2].twice(1);
-                hV[i + 1] = hV[i].add(hV[1]);
-                hV[i + 2] = hV[i].add(hV[2]);
-                hV[i + 3] = hV[i].add(hV[3]);
-            }
-            var t = Math.max(kr.bitLength(), ks.bitLength());
-            var R = this.E.infinity;
-            for (var i = (((t + 1) >> 1) << 1) - 1; i >= 0; i -= 2) {
-                var j = (kr.testBit(i  ) ? 8 : 0) |
-                        (ks.testBit(i  ) ? 4 : 0) |
-                        (kr.testBit(i-1) ? 2 : 0) |
-                        (ks.testBit(i-1) ? 1 : 0);
-                R = R.twice(2).add(hV[j]);
-            }
-            return R.normalize();
+    JSPoint2.simultaneous = function (kP, P, kQ, Q, kR, R, kS, S) {
+        var hV = new Array(16);
+        P = P.normalize();
+        if (kP.signum() < 0) {
+            kP = kP.negate(); P = P.negate();
         }
-        /*
-         * 
-         */
-        if (arguments.length === 8) {
-            var kP = ks, P = kr, kQ = Y;
-            var hV = new Array(16);
-            P = P.normalize();
-            if (kP.signum() < 0) {
-                kP = kP.negate(); P = P.negate();
-            }
-            Q = Q.normalize();
-            if (kQ.signum() < 0) {
-                kQ = kQ.negate(); Q = Q.negate();
-            }
-            R = R.normalize();
-            if (kR.signum() < 0) {
-                kR = kR.negate(); R = R.negate();
-            }
-            S = S.normalize();
-            if (kS.signum() < 0) {
-                kS = kS.negate(); S = S.negate();
-            }
-            hV[0] = this.E.infinity;
-            hV[1] = P; hV[2] = Q; hV[4] = R; hV[8] = S;
-            for (var i = 2; i < 16; i <<= 1) {
-                for (var j = 1; j < i; j++) {
-                    hV[i + j] = hV[i].add(hV[j]);
-                }
-            }
-            var t = Math.max(Math.max(kP.bitLength(), kQ.bitLength()), Math.max(kR.bitLength(), kS.bitLength()));
-            var V = this.E.infinity;
-            for (var i = t - 1; i >= 0; i--) {
-                var j = (kS.testBit(i) ?   8 : 0) |
-                        (kR.testBit(i) ?   4 : 0) |
-                        (kQ.testBit(i) ?   2 : 0) |
-                        (kP.testBit(i) ?   1 : 0);
-                V = V.twice(2).add(hV[j]);
-            }
-            return V.normalize();
+        Q = Q.normalize();
+        if (kQ.signum() < 0) {
+            kQ = kQ.negate(); Q = Q.negate();
         }
+        R = R.normalize();
+        if (kR.signum() < 0) {
+            kR = kR.negate(); R = R.negate();
+        }
+        S = S.normalize();
+        if (kS.signum() < 0) {
+            kS = kS.negate(); S = S.negate();
+        }
+        hV[0] = this.E.infinity;
+        hV[1] = P; hV[2] = Q; hV[4] = R; hV[8] = S;
+        for (var i = 2; i < 16; i <<= 1) {
+            for (var j = 1; j < i; j++) {
+                hV[i + j] = hV[i].add(hV[j]);
+            }
+        }
+        var t = Math.max(Math.max(kP.bitLength(), kQ.bitLength()), Math.max(kR.bitLength(), kS.bitLength()));
+        var V = this.E.infinity;
+        for (var i=t-1; i>=0; i--) {
+            var j = (kS.testBit(i)?8:0) | (kR.testBit(i)?4:0) | (kQ.testBit(i) ?   2 : 0) | (kP.testBit(i)?1:0);
+            V = V.twice(2).add(hV[j]);
+        }
+        return V.normalize();
     };
 
     /*
@@ -414,26 +375,14 @@ var JSPoint2 = (function () {
         switch (k) {
             case 1:
                 return (bn.b === 3) ?
-                    new JSPoint2(this.E,
-                        this.x.multiplyI().conjugate().multiply(bn.zeta),
-                        this.y.multiplyV().conjugate().multiply(bn.zeta0sigma),
-                        this.z) :
-                    new JSPoint2(this.E,
-                        this.x.conjugate().multiplyI().multiply(bn.zeta),
-                        this.y.conjugate().multiplyV().multiply(bn.zeta1sigma),
-                        this.z);
+                    new JSPoint2(this.E, this.x.multiplyI().conjugate().multiply(bn.zeta), this.y.multiplyV().conjugate().multiply(bn.zeta0sigma), this.z) :
+                    new JSPoint2(this.E, this.x.conjugate().multiplyI().multiply(bn.zeta), this.y.conjugate().multiplyV().multiply(bn.zeta1sigma), this.z);
             case 2:
                 return new JSPoint2(this.E, this.x.multiply(bn.zeta1).negate(), this.y.negate(), this.z);
             case 3:
                 return (bn.b === 3) ?
-                    new JSPoint2(this.E,
-                        this.x.multiplyI().conjugate(),
-                        this.y.multiplyV().conjugate().multiply(bn.zeta0sigma).negate(),
-                        this.z) :
-                    new JSPoint2(this.E,
-                        this.x.conjugate().multiplyI(),
-                        this.y.conjugate().multiplyV().multiply(bn.zeta1sigma).negate(),
-                        this.z);
+                    new JSPoint2(this.E, this.x.multiplyI().conjugate(), this.y.multiplyV().conjugate().multiply(bn.zeta0sigma).negate(), this.z) :
+                    new JSPoint2(this.E, this.x.conjugate().multiplyI(), this.y.conjugate().multiplyV().multiply(bn.zeta1sigma).negate(), this.z);
             default:
                 return null;
         }
