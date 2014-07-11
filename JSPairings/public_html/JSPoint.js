@@ -332,8 +332,6 @@ var JSPoint = (function () {
             var sr = k.subtract(kr.multiply(r).add(kt.multiply(t.add(r))));
             var st = kr.multiply(t).subtract(kt.multiply(r));
             var Y = new JSPoint(this.E, P.x.multiply(bn.zeta), P.y, P.z);
-            console.assert(Y.equals(P.multiply(bn.rho)));
-            console.assert(sr.add(bn.rho.multiply(st)).mod(bn.n).compareTo(k) !== 0);
             return P.simultaneous(sr, st, Y);
         } else {
             k = k.mod(this.E.bn.n);
@@ -358,7 +356,7 @@ var JSPoint = (function () {
          * @param {JSPoint} Y a curve point.
          * @returns ks*this + kr*Y
          */
-        console.assert(isOnSameCurve(Y));
+        console.assert(this.isOnSameCurve(Y));
         if (this.preComp === null) {
             var hV = new Array(16);
             var P = this.normalize();

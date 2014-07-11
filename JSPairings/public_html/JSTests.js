@@ -7,7 +7,106 @@
 var JSTests = (function () {
 
     var JSTests = function () {
-        this.validBitsRange = new Array(254,256);
+        this.validBitsRange = new Array(160,192,224,256);
+    };
+
+    JSTests.multiplyFp = function () {
+        var rng = new SecureRandom();
+        var total = new Array(this.validBitsRange.length);
+        for (var i = 0; i < this.validBitsRange.length; i++) {
+            total[i] = 0;
+            var bn = new JSParams(this.validBitsRange[i]);
+            var E = new JSCurve(bn);
+            var p = E.pointFactory(rng);
+            for (var j = 0; j < 1000; j++) {
+                var m = new BigInteger(this.validBitsRange[i], rng);
+                var before = window.performance.now();
+                var result = p.multiply(m);
+                var after = window.performance.now();
+                total[i] += (after - before);
+            }
+        }
+        return total;
+    };
+
+    JSTests.multiplyFp2 = function () {
+        var rng = new SecureRandom();
+        var total = new Array(this.validBitsRange.length);
+        for (var i = 0; i < this.validBitsRange.length; i++) {
+            total[i] = 0;
+            var bn = new JSParams(this.validBitsRange[i]);
+            var E = new JSCurve(bn);
+            var Et = new JSCurve2(E);
+            var p = Et.pointFactory(rng);
+            for (var j = 0; j < 1000; j++) {
+                var m = new BigInteger(this.validBitsRange[i], rng);
+                var before = window.performance.now();
+                var result = p.multiply(m);
+                var after = window.performance.now();
+                total[i] += (after - before);
+            }
+        }
+        return total;
+    };
+
+    JSTests.precomputedMultiplyFp = function () {
+        var rng = new SecureRandom();
+        var total = new Array(this.validBitsRange.length);
+        for (var i = 0; i < this.validBitsRange.length; i++) {
+            total[i] = 0;
+            var bn = new JSParams(this.validBitsRange[i]);
+            var E = new JSCurve(bn);
+            var p = E.pointFactory(rng);
+            p.getSerializedTable();
+            for (var j = 0; j < 1000; j++) {
+                var m = new BigInteger(this.validBitsRange[i], rng);
+                var before = window.performance.now();
+                var result = p.multiply(m);
+                var after = window.performance.now();
+                total[i] += (after - before);
+            }
+        }
+        return total;
+    };
+
+    JSTests.addFp = function () {
+        var rng = new SecureRandom();
+        var total = new Array(this.validBitsRange.length);
+        for (var i = 0; i < this.validBitsRange.length; i++) {
+            total[i] = 0;
+            var bn = new JSParams(this.validBitsRange[i]);
+            var E = new JSCurve(bn);
+            var p = E.pointFactory(rng);
+            var q = E.pointFactory(rng);
+            for (var j = 0; j < 1000; j++) {
+                var before = window.performance.now();
+                var result = p.add(q);
+                var after = window.performance.now();
+                total[i] += (after - before);
+            }
+        }
+        return total;
+    };
+
+    JSTests.pairing = function () {
+        var rng = new SecureRandom();
+        var total = new Array(this.validBitsRange.length);
+        for (var i = 0; i < this.validBitsRange.length; i++) {
+            total[i] = 0;
+            var bn = new JSParams(this.validBitsRange[i]);
+            var E = new JSCurve(bn);
+            var Et = new JSCurve2(E);
+            var pair = new JSPairing(Et);
+            for (var j = 0; j < 100; j++) {
+                var m = new BigInteger(this.validBitsRange[i], rng);
+                var a = Et.Gt.multiply(m);
+                var before = window.performance.now();
+                var b = pair.opt(a, E.G);
+                var after = window.performance.now();
+                total[i] += (after - before);
+            }
+        }
+        return total;
     };
 
     JSTests.test1 = function (pairType) {
@@ -125,125 +224,6 @@ var JSTests = (function () {
                 }
             }
         }
-    };
-
-    JSTests.pairing = function () {
-        var rng = new SecureRandom();
-        var total = new Array(this.validBitsRange.length);
-        for (var i = 0; i < this.validBitsRange.length; i++) {
-            total[i] = 0;
-            var bn = new JSParams(this.validBitsRange[i]);
-            var E = new JSCurve(bn);
-            var Et = new JSCurve2(E);
-            var pair = new JSPairing(Et);
-            for (var j = 0; j < 10; j++) {
-                var m = new BigInteger(this.validBitsRange[i], rng);
-                var a = Et.Gt.multiply(m);
-                var before = window.performance.now();
-                var b = pair.opt(a, E.G);
-                var after = window.performance.now();
-                total[i] += (after - before);
-            }
-            total[i] = total[i]/10;
-        }
-        return total;
-    };
-
-    JSTests.multiplyFp = function () {
-        var rng = new SecureRandom();
-        var total = new Array(this.validBitsRange.length);
-        for (var i = 0; i < this.validBitsRange.length; i++) {
-            total[i] = 0;
-            var bn = new JSParams(this.validBitsRange[i]);
-            var E = new JSCurve(bn);
-            var p = E.pointFactory(rng);
-            p.preCompute();
-            for (var j = 0; j < 1000; j++) {
-                var m = new BigInteger(this.validBitsRange[i], rng);
-                var before = window.performance.now();
-                var result = p.mohamedMultiply(m);
-                var after = window.performance.now();
-                total[i] += (after - before);
-            }
-            total[i] = total[i]/1000;
-        }
-        return total;
-    };
-
-    JSTests.multiplyFp2 = function () {
-        var rng = new SecureRandom();
-        var total = new Array(this.validBitsRange.length);
-        for (var i = 0; i < this.validBitsRange.length; i++) {
-            total[i] = 0;
-            var bn = new JSParams(this.validBitsRange[i]);
-            var E = new JSCurve(bn);
-            var Et = new JSCurve2(E);
-            for (var j = 0; j < 10; j++) {
-                var p = Et.pointFactory(rng);
-                var m = new BigInteger(this.validBitsRange[i], rng);
-                var before = window.performance.now();
-                var result = p.multiply(m);
-                var after = window.performance.now();
-                total[i] += (after - before);
-            }
-            total[i] = total[i]/10;
-        }
-        return total;
-    };
-
-    JSTests.multiplicationInFp2 = function () {
-        var rng = new SecureRandom();
-        var total = new Array(this.validBitsRange.length);
-        for (var i = 0; i < this.validBitsRange.length; i++) {
-            total[i] = 0;
-            var bn = new JSParams(this.validBitsRange[i]);
-            var E = new JSCurve(bn);
-            for (var j = 0; j < 10000; j++) {
-                var F2 = new JSField2(bn, rng);
-                var before = window.performance.now();
-                var result = F2.multiply(F2.randomize(rng));
-                var after = window.performance.now();
-                total[i] += (after - before);
-            }
-            total[i] = total[i]/10000;
-        }
-        return total;
-    };
-
-    JSTests.multiplicationInFp12 = function () {
-        var rng = new SecureRandom();
-        var total = new Array(this.validBitsRange.length);
-        for (var i = 0; i < this.validBitsRange.length; i++) {
-            total[i] = 0;
-            var bn = new JSParams(this.validBitsRange[i]);
-            var E = new JSCurve(bn);
-            for (var j = 0; j < 10000; j++) {
-                var F12 = new JSField12(bn, rng);
-                var before = window.performance.now();
-                var result = F12.multiply(F12.randomize(rng));
-                var after = window.performance.now();
-                total[i] += (after - before);
-            }
-            total[i] = total[i]/10000;
-        }
-        return total;
-    };
-
-    JSTests.sextic_twists = function () {
-        var total = new Array(this.validBitsRange.length);
-        for (var i = 0; i < this.validBitsRange.length; i++) {
-            total[i] = 0;
-            var bn = new JSParams(this.validBitsRange[i]);
-            var E = new JSCurve(bn);
-            for (var j = 0; j < 10; j++) {
-                var before = window.performance.now();
-                var Et = new JSCurve2(E);
-                var after = window.performance.now();
-                total[i] += (after - before);
-            }
-            total[i] = total[i]/10;
-        }
-        return total;
     };
 
     JSTests.test2 = function (iterations) {
@@ -525,16 +505,15 @@ var JSTests = (function () {
         }
     };
 
+    JSTests.prototype.multiplyFp = JSTests.multiplyFp;
+    JSTests.prototype.multiplyFp2 = JSTests.multiplyFp2;
+    JSTests.prototype.precomputedMultiplyFp = JSTests.precomputedMultiplyFp;
+    JSTests.prototype.addFp = JSTests.addFp;
+    JSTests.prototype.pairing = JSTests.pairing;
     JSTests.prototype.test1 = JSTests.test1;
     JSTests.prototype.test2 = JSTests.test2;
     JSTests.prototype.test3 = JSTests.test3;
     JSTests.prototype.test4 = JSTests.test4;
-    JSTests.prototype.pairing = JSTests.pairing;
-    JSTests.prototype.multiplyFp = JSTests.multiplyFp;
-    JSTests.prototype.multiplyFp2 = JSTests.multiplyFp2;
-    JSTests.prototype.multiplicationInFp2 = JSTests.multiplicationInFp2;
-    JSTests.prototype.multiplicationInFp12 = JSTests.multiplicationInFp12;
-    JSTests.prototype.sextic_twists = JSTests.sextic_twists;
 
     return JSTests;
 })();

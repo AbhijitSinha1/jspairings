@@ -33,33 +33,6 @@ var JSParams = (function () {
             this.m = fieldBits;
             this.b = 3; // default assumption; corrected below on demand
             switch (fieldBits) {
-                case 34:
-                    this.b = 2; this.u = new BigInteger("-10000101", 2); // Hamming weight 3
-                    break;
-                case 48:
-                    this.u = new BigInteger("-11001011001", 2); // Hamming weight 6
-                    break;
-                case 56:
-                    this.u = new BigInteger("1011001111011", 2); // Hamming weight 9
-                    break;
-                case 64:
-                    this.u = new BigInteger("110010000111111", 2); // Hamming weight 9
-                    break;
-                case 72:
-                    this.u = new BigInteger("10110000111001011", 2); // Hamming weight 9
-                    break;
-                case 80:
-                    this.u = new BigInteger("1101000010001011011", 2); // Hamming weight 9
-                    break;
-                case 88:
-                    this.u = new BigInteger("-110000011000001110001", 2); // Hamming weight 8
-                    break;
-                case 96:
-                    this.u = new BigInteger("11010000000000000010111", 2); // Hamming weight 7
-                    break;
-                case 104:
-                    this.u = new BigInteger("1101000000000000000100011", 2); // Hamming weight 6
-                    break;
                 case 112:
                     this.u = new BigInteger("-110000001100001000000000001", 2); // Hamming weight 6
                     break;
@@ -256,7 +229,7 @@ var JSParams = (function () {
             this.ht = this.p.subtract(this._1).add(this.t);
             //n = 36*u^4 + 36*u^3 + 18*u^2 + 6*u + 1
             this.n = this.p.add(this._1).subtract(this.t);
-            //zeta = 18*u^3 + 18*u^2 + 9*u + 1;
+            //zeta = 18*u^3 + 18*u^2 + 9*u + 1; --> primitive cube root of unity
             this.zeta = this._9.multiply(this.u).multiply(this.u.shiftLeft(1).multiply(this.u.add(this._1)).add(this._1)).add(this._1);
             this.zeta0 = this.zeta;
             this.zeta1 = this.zeta.add(this._1);
