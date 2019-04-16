@@ -858,7 +858,7 @@ function clone() {
 function testBit(n) {
     var j = Math.floor(n / 28);
     if (j >= this.t)
-        return(this.s !== 0);
+        return (this.s !== 0);
     return ((this[j] & (1 << (n % 28))) !== 0);
 }
 
@@ -992,3 +992,5 @@ NullExp.prototype.sqrTo = nSqrTo;
 // "constants"
 BigInteger.ZERO = nbv(0);
 BigInteger.ONE = nbv(1);
+
+module.exports = {BigInteger, Montgomery, NullExp};
