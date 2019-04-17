@@ -224,6 +224,9 @@ function subTo(a, r) {
 }
 
 function multiplyTo(a, r) {
+    if (a instanceof Number) {
+        a = this.nbv(a);
+    }
     var x = this.abs(), y = a.abs(), i = x.t;
     r.t = i + y.t;
     while (--i >= 0)
@@ -793,6 +796,9 @@ function toByteArray() {
 }
 
 function modInverse(m) {
+    if (this.compareTo(this.nbv(0)) == 0) {
+        return this;
+    }
     var ac = m.isEven();
     if ((this.isEven() && ac) || m.signum() === 0)
         return BigInteger.ZERO;
@@ -811,7 +817,7 @@ function modInverse(m) {
                 b.subTo(m, b);
             b.rShiftTo(1, b);
         }
-        while (v.isEven()) {
+        while (v.isEven() && v.compareTo(this.nbv(0)) > 0) {
             v.rShiftTo(1, v);
             if (ac) {
                 if (!c.isEven() || !d.isEven()) {
